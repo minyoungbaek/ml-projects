@@ -1,0 +1,80 @@
+import pandas as pd
+
+from alpaca.trading.client import TradingClient
+
+from datetime import datetime
+from datetime import time
+from datetime import timezone
+
+from typing import List
+from typing import Dict
+from typing import Union
+
+
+class PyRobot():
+    def __init__(self, api_key: str, secret_key: str, trading_account: str = None) -> None:
+        self.trading_account: str = trading_account
+        self.api_key: str = api_key
+        self.secret_key: str = secret_key
+        self.session: TradingClient = self._create_session()
+        self.trades: dict = {}
+        self.historical_prices: dict = {}
+        self.stock_frame = None
+
+    def _create_session(self) -> TradingClient:
+        trading_client = TradingClient(
+            api_key=self.api_key,
+            secret_key=self.secret_key,
+        )
+        return trading_client
+    
+    @property
+    def pre_market_open(self) -> bool:
+
+        pre_market_start_time = datetime.now().replace(hour=12, minute=00, second=00, tzinfo=timezone.utc).timestamp()
+        market_start_time = datetime.now().replace(hour=13, minute=30, second=00, tzinfo=timezone.utc).timestamp()
+        right_now = datetime.now().replace(tzinfo=timezone.utc).timestamp()
+
+        if market_start_time >= right_now >= pre_market_start_time:
+            return True
+        else:
+            return False
+
+    @property
+    def post_market_open(self) -> bool:
+         
+        post_market_end_time = datetime.now().replace(hour=22, minute=30, second=00, tzinfo=timezone.utc).timestamp()
+        market_end_time = datetime.now().replace(hour=20, minute=00, second=00, tzinfo=timezone.utc).timestamp()
+        right_now = datetime.now().replace(tzinfo=timezone.utc).timestamp()
+
+        if post_market_end_time >= right_now >= market_end_time:
+            return True
+        else:
+            return False
+
+    @property
+    def regular_market_open(self) -> bool:
+        
+        market_start_time = datetime.now().replace(hour=13, minute=30, second=00, tzinfo=timezone.utc).timestamp()
+        market_end_time = datetime.now().replace(hour=20, minute=00, second=00, tzinfo=timezone.utc).timestamp()
+        right_now = datetime.now().replace(tzinfo=timezone.utc).timestamp()
+
+        if market_end_time >= right_now >= market_start_time:
+            return True
+        else:
+            return False
+        
+    def create_portfolio(self):
+        pass
+
+    def create_trade(self):
+        pass
+
+    def grab_current_quotes(self) -> dict:
+        pass
+
+    def grab_historical_prices(self) -> List[Dict]:
+        pass
+
+    def create_stock_frame(self):
+        pass
