@@ -1,6 +1,7 @@
 import pandas as pd
 
-from alpaca.trading.client import TradingClient
+from td.client import TDClient
+from td.utils import milliseconds_since_epoch
 
 from datetime import datetime
 from datetime import time
@@ -10,18 +11,23 @@ from typing import List
 from typing import Dict
 from typing import Union
 
+from pyrobot.portfolio import Portfolio
 
 class PyRobot():
-    def __init__(self, api_key: str, secret_key: str, trading_account: str = None) -> None:
+    def __init__(self, client_id: str, redirect_uri: str, credentials_path: str = None, trading_account: str = None, paper_trading: bool = True) -> None:
+
         self.trading_account: str = trading_account
-        self.api_key: str = api_key
-        self.secret_key: str = secret_key
-        self.session: TradingClient = self._create_session()
+        self.client_id: str = client_id
+        self.redirect_uri: str = redirect_uri
+        self.credentials_path: str = credentials_path
+        self.session: TDClient = self._create_session()
         self.trades: dict = {}
         self.historical_prices: dict = {}
         self.stock_frame = None
+        self.paper_trading = paper_trading
 
     def _create_session(self) -> TradingClient:
+
         trading_client = TradingClient(
             api_key=self.api_key,
             secret_key=self.secret_key,
@@ -65,7 +71,8 @@ class PyRobot():
             return False
         
     def create_portfolio(self):
-        pass
+        
+        # Initialize a new Portfolio object
 
     def create_trade(self):
         pass
