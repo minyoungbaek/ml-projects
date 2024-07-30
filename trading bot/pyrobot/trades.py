@@ -41,7 +41,7 @@ class Trade():
                 'long':'SELL',
                 'short':'BUY_TO_COVER'
             }
-        }
+        } 
 
         self.order = {
             "orderStrategyType": "SINGLE",
@@ -50,7 +50,7 @@ class Trade():
             "duration": "DAY",
             "orderLegCollection": [
                 {
-                    "instruction": self.order_instructions[enter_or_exit][side],
+                    "instruction": self.order_instructions[enter_or_exit][long_or_short],
                     "quantity": 0,
                     "instrument": {
                         "symbol": None,
@@ -77,7 +77,7 @@ class Trade():
             self.order['stopType'] = 'STANDARD'
 
         self.enter_or_exit = enter_or_exit
-        self.side = side
+        self.side = long_or_short
         self.order_type = order_type
         self.price = price
 
