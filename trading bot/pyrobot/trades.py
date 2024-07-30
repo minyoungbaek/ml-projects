@@ -20,7 +20,7 @@ class Trade():
         self._triggered_added = False
         self._multi_leg = False
 
-    def new_trade(self, trade_id: str, order_type: str, side: str, enter_or_exit: str, price: float = 0.00, stop_limit_price: float = 0.00) -> dict:
+    def new_trade(self, trade_id: str, order_type: str, long_or_short: str, enter_or_exit: str, price: float = 0.00, stop_limit_price: float = 0.00) -> dict:
 
         self.trade_id = trade_id
 
