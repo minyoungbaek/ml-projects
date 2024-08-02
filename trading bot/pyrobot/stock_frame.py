@@ -70,31 +70,33 @@ class StockFrame():
         
         column_names = ['open', 'close', 'high', 'low', 'volume']
 
-        for symbol in data: 
+        for quote in data: 
 
-            # Parse that timestamp
+            # Parse the Timestamp
             time_stamp = pd.to_datetime(
-                data[symbol]['quoteTimeInLong'],
+                quote['datetime'],
                 unit='ms',
                 origin='unix'
             )
 
-            row_id = (symbol, time_stamp)
+            # Define the Index Tuple.
+            row_id = (quote['symbol'], time_stamp)
 
-            # Define our values.
+            # Define the values.
             row_values = [
-                data[symbol]['openPrice'],
-                data[symbol]['closePrice'],
-                data[symbol]['highPrice'],
-                data[symbol]['lowPrice'],
-                data[symbol]['askSize'] + data[symbol]['bidSize'],
+                quote['open'],
+                quote['close'],
+                quote['high'],
+                quote['low'],
+                quote['volume'],
             ]
 
-            # New row
+            # Create a new row
             new_row = pd.Series(data=row_values)
 
             # Add the row.
             self.frame.loc[row_id, column_names] = new_row.values
+            
             self.frame.sort_index(inplace=True)
     
     def do_indicators_exist(self, column_names: List[str]) -> bool:
