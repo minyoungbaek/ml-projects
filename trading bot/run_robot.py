@@ -188,6 +188,9 @@ while True:
     # Check for signals.
     signals = indicator_client.check_signals()
 
+    # Execute Trades.
+    trading_robot.execute_signals(signals=signals, trades_to_execute=trades_dict)
+
     # Grab the last bar, keep in mind this is after adding the new rows.
     last_bar_timestamp = trading_robot.stock_frame.frame.tail(1).index.get_level_values(1)
 

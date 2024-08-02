@@ -258,4 +258,157 @@ class PyRobot():
         print('')
 
         time_true.sleep(time_to_wait_now)
-       
+
+    def execute_signals(self, signals: List[pd.Series], trades_to_execute: dict) -> List[dict]:
+        """Executes the specified trades for each signal.
+
+
+        """
+
+        buys: pd.Series = signals[0][1]
+        sells: pd.Series = signals[1][1]
+
+        order_responses = []
+
+        # If we have buys or sells continue.
+        if not buys.empty:
+
+            # Grab the buy Symbols.
+            symbols_list = buys.index.get_level_values(0).to_list()
+
+            # Loop through each symbol.
+            for symbol in symbols_list:
+
+                # Check to see if there is Trde object.
+                if symbol in trades_to_execute:
+
+                    if self.portfolio.in_portfolio(symbol=symbol):
+                        self.portfolio.set_ownership_status(
+                            symbol=symbol,
+                            ownership=True
+                        )
+                    
+                    # Set the Execution Flag.
+                    trades_to_execute[symbol]['has_executed'] = True
+                    trade_obj: Trade = trades_to_execute[symbol]['trade_func']
+
+                    if not self.paper_trading:
+
+                        # Execute the order.
+                        order_response = self.execute_orders(
+                            trade_obj=trade_obj
+                        )
+
+                        order_reponse = {
+                            'order_id': order_response['order_id'],
+                            'request_body': order_reponse['request_body'],
+                            'timestamp': datetime.now().isoformat()
+                        }
+
+                        order_responses.append(order_response)
+
+                    else:
+
+                        order_response = {
+                            'order_id': trade_obj._generate_order_id(),
+                            'request_body': trade_obj.order,
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    
+                    order_responses.append(order_response)
+
+        elif not sells.empty:
+
+            # Grab the buy Symbols.
+            symbols_list = buys.index.get_level_values(0).to_list()
+
+            # Loop through each symbol.
+            for symbol in symbols_list:
+
+                # Check to see if there is Trde object.
+                if symbol in trades_to_execute:
+
+                    if self.portfolio.in_portfolio(symbol=symbol):
+                        self.portfolio.set_ownership_status(
+                            symbol=symbol,
+                            ownership=False
+                        )
+                    
+                    # Set the Execution Flag.
+                    trades_to_execute[symbol]['has_executed'] = True
+                    trade_obj: Trade = trades_to_execute[symbol]['trade_func']
+
+                    if not self.paper_trading:
+
+                        # Execute the order.
+                        order_response = self.execute_orders(
+                            trade_obj=trade_obj
+                        )
+
+                        order_reponse = {
+                            'order_id': order_response['order_id'],
+                            'request_body': order_reponse['request_body'],
+                            'timestamp': datetime.now().isoformat()
+                        }
+
+                        order_responses.append(order_response)
+
+                    else:
+
+                        order_response = {
+                            'order_id': trade_obj._generate_order_id(),
+                            'request_body': trade_obj.order,
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    
+                    order_responses.append(order_response)
+
+        # Save the response. 
+        self.save_orders(order_response_dict=order_responses)
+
+        return order_responses
+    
+    def execute_orders(self, trade_obj: Trade) -> dict:
+        """
+        """
+
+        # Execute the order.
+        order_dict = self.session.place_order(
+            account=self.trading_account,
+            order=trade_obj.order
+        )
+
+        return order_dict
+    
+    def save_orders(self, order_response_dict: dict) -> bool:
+        """
+        """
+
+        # Define the folder.
+        folder: pathlib.PurePath = pathlib.Path(__file__).parents[1].joinpath("data")
+
+        # See if it exist, if not create it.
+        if not folder.exists():
+            folder.mkdir()
+
+        # Define the file path.
+        file_path = folder.joinpath('orders.json')
+
+        # First check if the file already exists.
+        if file_path.exists():
+
+            with open('data/orders.json', 'r') as order_json:
+                orders_list = json.load(order_json)
+
+        else:
+
+            orders_list = []
+
+        # Combine both lists.
+        orders_list = orders_list + order_response_dict
+
+        # Write the new data back.
+        with open(file='data/orders.json', mode='w+') as order_json:
+            json.dump(obj=orders_list, fp=order_json, indent=4)
+        
+        return True
