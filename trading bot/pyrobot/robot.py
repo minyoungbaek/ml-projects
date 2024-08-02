@@ -1,4 +1,7 @@
 import pandas as pd
+import time as time_true
+import pathlib
+import json
 
 from td.client import TDClient
 from td.utils import milliseconds_since_epoch
@@ -6,6 +9,7 @@ from td.utils import milliseconds_since_epoch
 from datetime import datetime
 from datetime import time
 from datetime import timezone
+from datetime import timedelta
 
 from typing import List
 from typing import Dict
@@ -14,6 +18,7 @@ from typing import Optional
 
 from pyrobot.portfolio import Portfolio
 from pyrobot.stock_frame import StockFrame
+from pyrobot.trades import Trade
 
 class PyRobot():
     def __init__(self, client_id: str, redirect_uri: str, credentials_path: str = None, trading_account: str = None, paper_trading: bool = True) -> None:
@@ -82,8 +87,25 @@ class PyRobot():
 
         return self.portfolio
 
-    def create_trade(self):
-        pass
+    def create_trade(self, trade_id: str, enter_or_exit: str, long_or_short: str, order_type: str = 'mkt', 
+                     price: float = 0.0, stop_limit_price: float = 0.0):
+        
+        # Initialize a new trade object.
+        trade = Trade()
+
+        # Create a new trade.
+        trade.new_trade(
+            trade_id=trade_id,
+            order_type=order_type,
+            enter_or_exit=enter_or_exit,
+            long_or_short=long_or_short,
+            price=price,
+            stop_limit_price=stop_limit_price
+        )
+
+        self.trades[trade_id] = trade
+
+        return trade
 
     def grab_current_quotes(self) -> dict:
         
@@ -148,3 +170,92 @@ class PyRobot():
         self.historical_prices['aggregated'] = new_prices
 
         return self.historical_prices
+    
+    def get_latest_bar(self) -> List[dict]:
+
+        bar_size = self._bar_size
+        bar_type = self._bar_type
+
+        # Define our date range.
+        end_date = datetime.today()
+        start_date = end_date - timedelta(minutes=15)
+
+        start = str(milliseconds_since_epoch(dt_object=start_date))
+        end = str(milliseconds_since_epoch(dt_object=end_date))
+
+        latest_prices = []
+
+        for symbol in self.portfolio.positions:
+
+            # TD Ameritrade API
+            historical_prices_response = self.session.get_price_history(
+                symbol=symbol,
+                period_type='day',
+                start_date=start,
+                end_date=end,
+                frequency_type=bar_type,
+                frequency=bar_size,
+                extended_hours=True
+            )
+
+            if 'error' in historical_prices_response:
+
+                time_true.sleep(2)
+
+                historical_prices_response = self.session.get_price_history(
+                    symbol=symbol,
+                    period_type='day',
+                    start_date=start,
+                    end_date=end,
+                    frequency_type=bar_type,
+                    frequency=bar_size,
+                    extended_hours=True
+                )
+
+            for candle in historical_prices_response['candles'][-1]:
+
+                new_price_mini_dict = {}
+                new_price_mini_dict['symbol'] = symbol
+                new_price_mini_dict['open'] = candle['open']
+                new_price_mini_dict['close'] = candle['close']
+                new_price_mini_dict['high'] = candle['high']
+                new_price_mini_dict['low'] = candle['low'] 
+                new_price_mini_dict['volume'] = candle['volume']
+                new_price_mini_dict['datetime'] = candle['datetime']
+                latest_prices.append(new_price_mini_dict)
+
+        return latest_prices
+    
+    def wait_till_next_bar(self, last_bar_timestamp: pd.DatetimeIndex) -> None:
+
+        last_bar_time = last_bar_timestamp.to_pydatetime()[0].replace(tzinfo=timezone.utc)
+        next_bar_time = last_bar_time + timedelta(seconds=60)
+        curr_bar_time = datetime.now(tz=timezone.utc)
+
+        last_bar_timestamp = int(last_bar_time.timestamp())
+        next_bar_timestamp = int(next_bar_time.timestamp())
+        curr_bar_timestamp = int(curr_bar_time.timestamp())
+
+        _time_to_wait_bar = next_bar_timestamp - last_bar_timestamp
+        time_to_wait_now = next_bar_timestamp - curr_bar_timestamp
+
+        if time_to_wait_now < 0:
+            time_to_wait_now = 0
+
+        print("="*80)
+        print("Pausing for the next bar")
+        print("-"*80)
+        print("Curr Time: {time_curr}".format(
+                time_curr=curr_bar_time.strftime("%Y-%m-%d %H:%M:%S")
+            )
+        )
+        print("Next Time: {time_next}".format(
+                time_next=next_bar_time.strftime("%Y-%m-%d %H:%M:%S")
+            )
+        )
+        print("Sleep Time: {seconds}".format(seconds=time_to_wait_now))
+        print("-"*80)
+        print('')
+
+        time_true.sleep(time_to_wait_now)
+       
